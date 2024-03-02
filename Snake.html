@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #483D8B; /* DarkSlateBlue */
+        }
+
+        canvas {
+            display: none;
+            border: 1px solid #87CEEB; /* SkyBlue */
+        }
+
+        #menu {
+            text-align: center;
+            color: #FFFFFF; /* White */
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #tryAgain {
+            display: none;
+            text-align: center;
+            color: #FFFFFF; /* White */
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+    <title>Snake Game</title>
+</head>
+<body>
+    <div id="menu">
+        <p>Press "Start Game" to begin</p>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <canvas id="snakeCanvas" width="400" height="400"></canvas>
+
+    <div id="tryAgain">
+        <p>Game Over!</p>
+        <p id="finalScore"></p>
+        <button onclick="tryAgain()">Try Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("snakeCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const boxSize = 20;
+        const canvasSize = 400;
+        const initialSnakeLength = 1;
+
+        let snake = [{ x: 200, y: 200 }];
+        let direction = "right";
+        let food = { x: 0, y: 0 };
+        let score = 0;
+
+        let gameRunning = false;
+
+        function draw() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+            // Draw the snake
+            ctx.fillStyle = "#00CED1"; // DarkTurquoise
+            snake.forEach((segment) => {
+                ctx.fillRect(segment.x, segment.y, boxSize, boxSize);
+            });
+
+            // Draw the food
+            ctx.fillStyle = "#FF0000"; // Red
+            ctx.fillRect(food.x, food.y, boxSize, boxSize);
+
+            // Draw the score
+            ctx.fillStyle = "#FFFFFF"; // White
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 20);
+        }
+
+        function update() {
+            // Update snake position based on the current direction
+            let newX = snake[0].x;
+            let newY = snake[0].y;
+
+            if (direction === "right") newX += boxSize;
+            if (direction === "left") newX -= boxSize;
+            if (direction === "up") newY -= boxSize;
+            if (direction === "down") newY += boxSize;
+
+            // Check for collision with the walls
+            if (newX < 0 || newX >= canvasSize || newY < 0 || newY >= canvasSize) {
+                endGame();
+                return;
+            }
+
+            // Check for collision with itself
+            if (checkCollision(newX, newY, snake.slice(1))) {
+                endGame();
+                return;
+            }
+
+            // Check for collision with food
+            if (newX === food.x && newY === food.y) {
+                // Increase score and generate new food
+                score++;
+                generateFood();
+            } else {
+                // Remove the tail segment
+                snake.pop();
+            }
+
+            // Add new head segment
+            snake.unshift({ x: newX, y: newY });
+
+            // Adjust game speed based on snake length
+            const speedDelay = Math.max(100, 200 - snake.length * 10);
+            setTimeout(gameLoop, speedDelay);
+        }
+
+        function checkCollision(x, y, array) {
+            // Check if the coordinates (x, y) collide with any segment in the array
+            return array.some((segment) => segment.x === x && segment.y === y);
+        }
+
+        function generateFood() {
+            // Generate random coordinates for the food
+            food = {
+                x: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize,
+                y: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize
+            };
+
+            // Make sure the food doesn't overlap with the snake
+            while (checkCollision(food.x, food.y, snake)) {
+                food = {
+                    x: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize,
+                    y: Math.floor(Math.random() * (canvasSize / boxSize)) * boxSize
+                };
+            }
+        }
+
+        function startGame() {
+            // Hide menu, show canvas, and reset game state
+            document.getElementById("menu").style.display = "none";
+            document.getElementById("tryAgain").style.display = "none";
+            canvas.style.display = "block";
+            score = 0;
+            snake = [{ x: 200, y: 200 }];
+            direction = "right";
+            generateFood();
+            gameRunning = true;
+            gameLoop();
+        }
+
+        function endGame() {
+            // Show game over screen with final score and try again button
+            gameRunning = false;
+            canvas.style.display = "none";
+            document.getElementById("tryAgain").style.display = "block";
+            document.getElementById("finalScore").innerText = "Score: " + score;
+        }
+
+        function tryAgain() {
+            // Restart the game
+            startGame();
+        }
+
+        function keyDownHandler(event) {
+            // Update direction based on arrow key input
+            if (gameRunning) {
+                if (event.key === "ArrowRight" && direction !== "left") direction = "right";
+                if (event.key === "ArrowLeft" && direction !== "right") direction = "left";
+                if (event.key === "ArrowUp" && direction !== "down") direction = "up";
+                if (event.key === "ArrowDown" && direction !== "up") direction = "down";
+            }
+        }
+
+        function gameLoop() {
+            if (gameRunning) {
+                update();
+                draw();
+            }
+        }
+
+        // Set up event listener for arrow key input
+        document.addEventListener("keydown", keyDownHandler);
+    </script>
+</body>
+</html>
